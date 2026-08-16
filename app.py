@@ -7,8 +7,7 @@ app.py — נקודת הכניסה של השרת.
 """
 
 from flask import Flask, jsonify
-from helpers import load_vortim_for_parsha, load_single_vort
-
+from helpers import load_vortim_for_parsha, load_single_vort, get_current_parsha
 app = Flask(__name__)
 
 
@@ -45,8 +44,20 @@ def get_single_vort(parsha, vort_id):
 
 @app.route('/current', methods=['GET'])
 def current_parsha():
-    return jsonify({"current_parsha": "bereshit"})
+    parsha = get_current_parsha()
+    return jsonify({"current_parsha": parsha})
 
+
+@app.route('/current/vortim', methods=['GET'])
+def current_parsha_vortim():
+    parsha = get_current_parsha()
+
+    vortim = load_vortim_for_parsha(parsha)
+
+    if vortim is None:
+        return jsonify({"error": f"No vortim found for current parsha '{parsha}'"}), 404
+
+    return jsonify(vortim)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

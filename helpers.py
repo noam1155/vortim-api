@@ -16,6 +16,9 @@ app.py מייבא מכאן. אל תכתוב לוגיקה כבדה בתוך ה-ro
 
 import json
 from pathlib import Path
+import config
+from pyluach import dates, parshios
+
 
 BASE_DIR = Path(__file__).parent
 
@@ -55,3 +58,32 @@ def load_single_vort(parsha_name, vort_id):
         vort_data = json.load(f)
         vort_data['is_long'] = is_long(vort_data.get('text', ''))
         return vort_data
+
+
+PARSHA_MAPPING = {
+    "Bereshit": "bereshit",
+    "Noach": "noach",
+    "Lech Lecha": "lech_lecha"
+}
+
+
+def get_current_parsha():
+    today = dates.HebrewDate.today()
+
+    luach_parsha = parshios.getparsha_string(today, israel=True)
+
+
+    if luach_parsha is None:
+        return "bereshit"
+
+    folder_name = PARSHA_MAPPING.get(luach_parsha, "bereshit")
+
+    return folder_name
+
+
+
+
+
+
+
+
