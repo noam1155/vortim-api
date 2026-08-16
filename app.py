@@ -7,42 +7,46 @@ app.py — נקודת הכניסה של השרת.
 """
 
 from flask import Flask, jsonify
+from helpers import load_vortim_for_parsha, load_single_vort
 
 app = Flask(__name__)
 
-#ראוט בסיסי
+
 @app.route('/', methods=['GET'])
 def home():
-    return jsonify({ "status": "server is running" })
+    return jsonify({"status": "server is running"})
 
-#שממות פרשות
+
 @app.route('/parshiot', methods=['GET'])
 def get_parshiot():
-    return jsonify(["Bereshit", "Noach", "Lech_Lecha"])
+    # כרגע רשימת הפרשות נשארת קבועה
+    return jsonify(["bereshit", "noach", "lech_lecha"])
 
-#רשימת וורטים קבועה של פרשה כלשהיא
+
 @app.route('/parshiot/<parsha>/vortim', methods=['GET'])
 def get_vortim_by_parsha(parsha):
-    return jsonify([
-        {"id": "vort_01", "title": f"Vort 1 for {parsha}"},
-        {"id": "vort_02", "title": f"Vort 2 for {parsha}"}
-    ])
+    vortim = load_vortim_for_parsha(parsha)
 
-#וורט בודד קבוע
+    if vortim is None:
+        return jsonify({"error": f"Parsha '{parsha}' not found"}), 404
+
+    return jsonify(vortim)
+
+
 @app.route('/parshiot/<parsha>/vortim/<vort_id>', methods=['GET'])
 def get_single_vort(parsha, vort_id):
-    return jsonify({
-        "id": vort_id,
-        "parsha": parsha,
-        "title": "A Great Vort",
-        "author": "Rabbi",
-        "text": "This is a dummy text for the vort."
-    })
+    vort_data = load_single_vort(parsha, vort_id)
 
-#שם פרשה קבוע
+    if vort_data is None:
+        return jsonify({"error": f"Vort '{vort_id}' not found in parsha '{parsha}'"}), 404
+
+    return jsonify(vort_data)
+
+
 @app.route('/current', methods=['GET'])
 def current_parsha():
-    return jsonify({"current_parsha": "Bereshit"})
+    return jsonify({"current_parsha": "bereshit"})
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
