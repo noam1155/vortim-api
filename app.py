@@ -5,3 +5,16 @@ app.py — נקודת הכניסה של השרת.
 
 בנה את הקובץ הזה לפי ההנחיות במסמכי docs/, שלב אחר שלב.
 """
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({ "status": "server is running" })
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+
+
