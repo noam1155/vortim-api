@@ -5,3 +5,4 @@ config.py — הגדרות הפרויקט במקום אחד.
 """
 
 CURRENT_PARSHA = "bereshit"
+JWT_SECRET = "super-secret-key-1234"

@@ -18,6 +18,9 @@ import json
 from pathlib import Path
 import config
 from pyluach import dates, parshios
+import bcrypt
+import jwt
+import datetime
 
 
 BASE_DIR = Path(__file__).parent
@@ -81,7 +84,42 @@ def get_current_parsha():
     return folder_name
 
 
+USERS_FILE = BASE_DIR / 'data' / 'users.json'
 
+def load_users():
+    """טוענת את המשתמשים מתוך הקובץ. אם אין קובץ, מחזירה מילון ריק."""
+    if not USERS_FILE.exists():
+        return {}
+    with open(USERS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_users(users):
+    """שומרת את המילון של המשתמשים חזרה לקובץ."""
+    with open(USERS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(users, f, indent=4)
+
+def hash_password(password):
+    """מצפינה את הסיסמה עם bcrypt"""
+    bytes_password = password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(bytes_password, salt)
+    return hashed.decode('utf-8')
+
+def verify_password(password, hashed):
+    """מאמתת את הסיסמה מול ה-hash"""
+    bytes_password = password.encode('utf-8')
+    bytes_hashed = hashed.encode('utf-8')
+    return bcrypt.checkpw(bytes_password, bytes_hashed)
+
+def create_token(username):
+    """יוצרת token שמכיל את שם המשתמש ותוקף"""
+    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    payload = {
+        "username": username,
+        "exp": expiration
+    }
+    token = jwt.encode(payload, config.JWT_SECRET, algorithm="HS256")
+    return token
 
 
 

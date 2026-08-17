@@ -6,8 +6,11 @@ app.py — נקודת הכניסה של השרת.
 בנה את הקובץ הזה לפי ההנחיות במסמכי docs/, שלב אחר שלב.
 """
 
-from flask import Flask, jsonify
-from helpers import load_vortim_for_parsha, load_single_vort, get_current_parsha
+from flask import Flask, jsonify, request
+from helpers import load_vortim_for_parsha, load_single_vort, get_current_parsha, load_users, save_users, hash_password, verify_password, create_token
+
+
+
 app = Flask(__name__)
 
 
@@ -18,7 +21,6 @@ def home():
 
 @app.route('/parshiot', methods=['GET'])
 def get_parshiot():
-    # כרגע רשימת הפרשות נשארת קבועה
     return jsonify(["bereshit", "noach", "lech_lecha"])
 
 
@@ -59,7 +61,44 @@ def current_parsha_vortim():
 
     return jsonify(vortim)
 
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    users = load_users()
+
+    if username in users:
+        return jsonify({"error": "User already exists"}), 400
+
+    hashed_pass = hash_password(password)
+    users[username] = {"password": hashed_pass}
+    save_users(users)
+
+    return jsonify({"message": "User registered successfully"}), 201
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    users = load_users()
+
+    if username not in users:
+        return jsonify({"error": "Invalid credentials"}), 401
+
+    saved_hash = users[username]['password']
+    if not verify_password(password, saved_hash):
+        return jsonify({"error": "Invalid credentials"}), 401  # סיסמה שגויה מחזירה 401
+
+    token = create_token(username)
+    return jsonify({"token": token}), 200
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)
 
 
