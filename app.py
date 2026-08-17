@@ -7,8 +7,7 @@ app.py — נקודת הכניסה של השרת.
 """
 
 from flask import Flask, jsonify, request
-from helpers import load_vortim_for_parsha, load_single_vort, get_current_parsha, load_users, save_users, hash_password, verify_password, create_token
-
+from helpers import load_vortim_for_parsha, load_single_vort, get_current_parsha, load_users, save_users, hash_password, verify_password, create_token, get_current_username
 
 
 app = Flask(__name__)
@@ -31,6 +30,12 @@ def get_vortim_by_parsha(parsha):
     if vortim is None:
         return jsonify({"error": f"Parsha '{parsha}' not found"}), 404
 
+    username = get_current_username(request)
+    if not username:
+        for vort in vortim:
+            if vort.get('is_long'):
+                vort['text'] = "התחבר כדי לקרוא את הוורט המלא (preview)"
+
     return jsonify(vortim)
 
 
@@ -40,6 +45,11 @@ def get_single_vort(parsha, vort_id):
 
     if vort_data is None:
         return jsonify({"error": f"Vort '{vort_id}' not found in parsha '{parsha}'"}), 404
+
+    if vort_data.get('is_long'):
+        username = get_current_username(request)
+        if not username:
+            return jsonify({"error": "Login required to view this long vort"}), 403
 
     return jsonify(vort_data)
 
@@ -53,13 +63,18 @@ def current_parsha():
 @app.route('/current/vortim', methods=['GET'])
 def current_parsha_vortim():
     parsha = get_current_parsha()
-
     vortim = load_vortim_for_parsha(parsha)
 
     if vortim is None:
         return jsonify({"error": f"No vortim found for current parsha '{parsha}'"}), 404
 
-    return jsonify(vortim)
+    username = get_current_username(request)
+    if not username:
+        for vort in vortim:
+            if vort.get('is_long'):
+                vort['text'] = "התחבר כדי לקרוא את הוורט המלא (preview)"
+
+    return jsonify(vortim), 200
 
 
 @app.route('/register', methods=['POST'])
@@ -93,12 +108,10 @@ def login():
 
     saved_hash = users[username]['password']
     if not verify_password(password, saved_hash):
-        return jsonify({"error": "Invalid credentials"}), 401  # סיסמה שגויה מחזירה 401
+        return jsonify({"error": "Invalid credentials"}), 401 # סיסמה שגויה מחזירה 401
 
     token = create_token(username)
     return jsonify({"token": token}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
-
-

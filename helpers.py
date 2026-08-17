@@ -27,7 +27,6 @@ BASE_DIR = Path(__file__).parent
 
 PARSHIOT_DIR = BASE_DIR / 'data' / 'parshiot'
 
-
 def is_long(text):
     lines_count = text.count('\n') + 1
     return lines_count > 20
@@ -120,6 +119,42 @@ def create_token(username):
     }
     token = jwt.encode(payload, config.JWT_SECRET, algorithm="HS256")
     return token
+
+
+ADMINS_FILE = BASE_DIR / 'data' / 'admins.json'
+
+def load_admins():
+    """טוענת את רשימת המנהלים מתוך הקובץ"""
+    if not ADMINS_FILE.exists():
+        return []
+    with open(ADMINS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def check_if_admin(username):
+    admins = load_admins()
+    return username in admins
+
+
+def decode_token(token):
+    """מפענחת את הטוקן ומחזירה את שם המשתמש. אם לא תקין, מחזירה None."""
+    try:
+        payload = jwt.decode(token, config.JWT_SECRET, algorithms=["HS256"])
+        return payload['username']
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def get_current_username(req):
+    """
+    פונקציית עזר הבודקת אם יש טוקן תקין בכותרת הבקשה (Authorization: Bearer <token>).
+    מחזירה את שם המשתמש אם הכל תקין, או None אם מדובר באורח.
+    """
+    auth_header = req.headers.get('Authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        token = auth_header.split(' ')[1]
+        return decode_token(token)
+    return None
 
 
 

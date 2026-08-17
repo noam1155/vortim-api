@@ -2,4 +2,6 @@
 
 Flask
 requests
-pyluach 
+pyluach
+bcrypt
+pyjwt
